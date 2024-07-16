@@ -1,0 +1,3 @@
+echo "2024-07-15 14:00:00 INFO User logged out" > sample_logs/log3.txt
+echo "2024-07-15 14:05:00 ERROR API request failed with status 500" >> sample_logs/log3.txt
+echo "2024-07-15 14:10:00 WARN Memory usage high on server" >> sample_logs/log3.txt
