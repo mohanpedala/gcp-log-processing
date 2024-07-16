@@ -36,13 +36,12 @@ jobs:
           run: |
             terraform init
             terraform apply -auto-approve
-            echo "TMP_BUCKET_URL=$(terraform output -raw temp_bucket_url)" >> $GITHUB_ENV
+            echo "RAW_LOGS_BUCKET_URL=$(terraform output -raw raw_logs_bucket)" >> $GITHUB_ENV
 
         - name: Run Dataflow Pipeline
           run: |
             python dataflow_pipeline.py \
             --runner DataflowRunner \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --temp_location $TEMP_BUCKET_URL \
-            --staging_location $STAGING_BUCKET_URL \
+            --temp_location $RAW_LOGS_BUCKET_URL \
             --region us-central1
