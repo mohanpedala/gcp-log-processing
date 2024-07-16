@@ -1,43 +1,36 @@
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
+from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.options.value_provider import ValueProvider
+import argparse
 
-class ParseLog(beam.DoFn):
-    def process(self, element):
-        import re
-        pattern = re.compile(r'^(?P<timestamp>\S+ \S+) (?P<level>\S+) (?P<message>.+)$')
-        match = pattern.match(element)
-        if match:
-            yield {
-                'timestamp': match.group('timestamp'),
-                'level': match.group('level'),
-                'message': match.group('message')
-            }
-
-class FormatForBigQuery(beam.DoFn):
-    def process(self, element):
-        yield {
-            'timestamp': element['timestamp'],
-            'level': element['level'],
-            'message': element['message']
-        }
+class CustomPipelineOptions(PipelineOptions):
+    @classmethod
+    def _add_argparse_args(cls, parser):
+        parser.add_value_provider_argument(
+            '--input_bucket',
+            type=str,
+            help='GCS bucket to read input files from'
+        )
 
 def run(argv=None):
-    pipeline_options = PipelineOptions()
-    p = beam.Pipeline(options=pipeline_options)
+    parser = argparse.ArgumentParser()
+    known_args, pipeline_args = parser.parse_known_args(argv)
+    
+    pipeline_options = PipelineOptions(pipeline_args)
+    custom_options = pipeline_options.view_as(CustomPipelineOptions)
 
-    (p
-     | 'ReadFromGCS' >> beam.io.ReadFromText('gs://your-project-id-raw-logs/*.txt')
-     | 'ParseLog' >> beam.ParDo(ParseLog())
-     | 'FormatForBigQuery' >> beam.ParDo(FormatForBigQuery())
-     | 'WriteToBigQuery' >> beam.io.WriteToBigQuery(
-         'your-project-id:logs_dataset.processed_logs',
-         schema='timestamp:TIMESTAMP,level:STRING,message:STRING',
-         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
-         write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND)
-    )
-
-    result = p.run()
-    result.wait_until_finish()
+    with beam.Pipeline(options=pipeline_options) as p:
+        (
+            p
+            | 'ReadFromGCS' >> beam.io.ReadFromText(custom_options.input_bucket)
+            | 'ParseLog' >> beam.ParDo(ParseLog())
+            | 'FormatForBigQuery' >> beam.ParDo(FormatForBigQuery())
+            | 'WriteToBigQuery' >> beam.io.WriteToBigQuery(
+                'your-project-id:logs_dataset.processed_logs',
+                schema='timestamp:TIMESTAMP,level:STRING,message:STRING',
+                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND)
+        )
 
 if __name__ == '__main__':
     run()
