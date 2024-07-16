@@ -6,6 +6,10 @@ resource "google_storage_bucket" "raw_logs" {
 
 # Use local-exec to upload a file to the bucket
 resource "null_resource" "upload_files" {
+  triggers = {
+    # Use a timestamp to force a run on each apply
+    always_run = "${timestamp()}"
+  }
   provisioner "local-exec" {
     command = <<EOT
       # Retrieve the bucket URL from Terraform output
@@ -13,7 +17,7 @@ resource "null_resource" "upload_files" {
 
       # Upload a file to the bucket
       gsutil cp ./sample-logs/* $BUCKET_URL
-      gsutil cp ./scripts/* $BUCKET_URL
+      gsutil cp ./scripts/dataflow.py $BUCKET_URL
     EOT
   }
   depends_on = [google_storage_bucket.raw_logs]
