@@ -40,14 +40,10 @@ jobs:
         - name: Run Dataflow Pipeline
           run: |
             # Ensure correct directory
-            cd ${{ github.workspace }}
+            cd ${{ github.workspace }}/scripts/
+            ls -al
 
-            # Verify the file exists
-            ls -l ./scripts/
-
-            echo ${{ env.RAW_LOGS_BUCKET_URL }}
-
-            python ${{ github.workspace }}/scripts/dataflow_pipeline.py \
+            python dataflow_pipeline.py \
             --runner DataflowRunner \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --temp_location ${{ env.RAW_LOGS_BUCKET_URL }}/*txt \
