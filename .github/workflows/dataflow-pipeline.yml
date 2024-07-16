@@ -42,12 +42,12 @@ jobs:
           run: |
             # Ensure correct directory
             cd ${{ github.workspace }}
-            
-            # Verify the file exists
-            ls -l ./scripts/dataflow_pipeline.py
 
-            python dataflow_pipeline.py \
-            --runner DataflowRunner \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
-            --temp_location $RAW_LOGS_BUCKET_URL \
-            --region us-central1
+            # Verify the file exists
+            ls -l
+
+            # python dataflow_pipeline.py \
+            # --runner DataflowRunner \
+            # --project ${{ secrets.GCP_PROJECT_ID }} \
+            # --temp_location $RAW_LOGS_BUCKET_URL \
+            # --region us-central1
