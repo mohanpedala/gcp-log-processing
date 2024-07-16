@@ -1,0 +1,44 @@
+name: Dataflow Pipeline
+
+on:
+    push:
+        branches:
+            - main
+
+    workflow_dispatch:
+
+jobs:
+    run-dataflow:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+
+        - name: Set up Google Cloud SDK
+          uses: google-github-actions/setup-gcloud@v1  
+          with:
+            version: 'latest'
+            project_id: ${{ secrets.GCP_PROJECT_ID }}
+            service_account_key: $${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        
+        - name: Install deps
+          run: |
+            python -m pip install --upgrade pip
+            pip install apache-beam[gcp]
+        
+        - name: Get Terraform Outputs
+          id: terraform
+          run: |
+            terraform init
+            terraform apply -auto-approve
+            echo "TMP_BUCKET_URL=$(terraform output -raw temp_bucket_url)" >> $GITHUB_ENV
+
+        - name: Run Dataflow Pipeline
+          run: |
+            python dataflow_pipeline.py \
+            --runner DataflowRunner \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --temp_location $TEMP_BUCKET_URL \
+            --staging_location $STAGING_BUCKET_URL \
+            --region us-central1

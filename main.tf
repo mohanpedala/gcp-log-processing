@@ -13,6 +13,7 @@ resource "null_resource" "upload_files" {
 
       # Upload a file to the bucket
       gsutil cp ./sample-logs/* $BUCKET_URL
+      gsutil cp ./scripts/* $BUCKET_URL
     EOT
   }
   depends_on = [google_storage_bucket.raw_logs]
