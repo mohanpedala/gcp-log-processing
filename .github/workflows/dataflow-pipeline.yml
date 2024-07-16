@@ -43,7 +43,7 @@ jobs:
             cd ${{ github.workspace }}/scripts/
             ls -al
 
-            python dataflow_pipeline.py \
+            python dataflow.py \
             --runner DataflowRunner \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --temp_location ${{ env.RAW_LOGS_BUCKET_URL }}/*txt \
