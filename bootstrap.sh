@@ -36,3 +36,19 @@ gcloud storage buckets create gs://my-unique-bucket-name-12345 --location=US
 # sh
 # Copy code
 # export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
+
+gcloud projects add-iam-policy-binding log-processing-12345 \
+    --member=serviceAccount:log-processing-terraform@log-processing-12345.iam.gserviceaccount.com \
+    --role=roles/storage.objectViewer
+
+gcloud projects add-iam-policy-binding log-processing-12345 \
+    --member=serviceAccount:log-processing-terraform@log-processing-12345.iam.gserviceaccount.com \
+    --role=roles/storage.objectAdmin
+
+gcloud projects add-iam-policy-binding log-processing-12345 \
+    --member=serviceAccount:log-processing-terraform@log-processing-12345.iam.gserviceaccount.com \
+    --role=roles/dataflow.admin
+
+gcloud projects add-iam-policy-binding log-processing-12345 \
+    --member=serviceAccount:log-processing-terraform@log-processing-12345.iam.gserviceaccount.com \
+    --role=roles/bigquery.dataEditor

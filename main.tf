@@ -34,7 +34,7 @@ resource "google_bigquery_table" "processed_logs" {
 
   schema = <<EOF
     [
-    {"name": "timestamp", "type": "TIMESTAMP", "mode": "REQUIRED"},
+    {"name": "timestamp", "type": "TIMESTAMP", "mode": "NULLABLE"},
     {"name": "level", "type": "STRING", "mode": "REQUIRED"},
     {"name": "message", "type": "STRING", "mode": "REQUIRED"}
     ]
