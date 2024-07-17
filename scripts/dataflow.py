@@ -6,18 +6,21 @@ from apache_beam.io.gcp.bigquery import WriteToBigQuery
 
 project_id = "log-processing-12345"
 bucket_url = f"gs://{project_id}-raw-logs/"
+
+
 class ParseLogFn(beam.DoFn):
     def process(self, element):
         import re
-        logging.info(f"Processing element: {element}")
-        pattern = re.compile(r'^(?P<timestamp>\S+ \S+) (?P<level>\S+) (?P<message>.+)$')
+        # Improved regular expression to capture timestamp, level, and message
+        pattern = re.compile(r'^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<level>\S+) (?P<message>.+)$')
         match = pattern.match(element)
         if match:
             yield {
-                'timestamp': match.group('timestamp'),
-                'level': match.group('level'),
+                'timestamp': match.group('timestamp'),  # Extract timestamp group
+                'level': match.group('level').upper(),  # Convert level to uppercase
                 'message': match.group('message')
             }
+
 
 def run(argv=None):
     logging.basicConfig(level=logging.INFO)
@@ -35,13 +38,22 @@ def run(argv=None):
         job_name=job_name,
     )
 
+    # Define the schema to match the log format
+    schema = """
+      [
+      {"name": "timestamp", "type": "TIMESTAMP"},
+      {"name": "level", "type": "STRING"},
+      {"name": "message", "type": "STRING"}
+      ]
+    """
+
     with beam.Pipeline(options=options) as p:
         (p
          | 'ReadFromGCS' >> beam.io.ReadFromText('gs://log-processing-12345-raw-logs/*.txt')
          | 'ParseLog' >> beam.ParDo(ParseLogFn())
          | 'WriteToBigQuery' >> WriteToBigQuery(
              table='log-processing-12345:logs_dataset.processed_logs',
-             schema='timestamp:TIMESTAMP,level:STRING,message:STRING',
+             schema=schema,
              custom_gcs_temp_location=bucket_url + 'temp',
              create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
              write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND

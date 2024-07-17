@@ -29,12 +29,13 @@ resource "google_bigquery_dataset" "logs_dataset" {
 }
 
 resource "google_bigquery_table" "processed_logs" {
-  dataset_id = google_bigquery_dataset.logs_dataset.dataset_id
-  table_id   = "processed_logs"
+  dataset_id          = google_bigquery_dataset.logs_dataset.dataset_id
+  table_id            = "processed_logs"
+  deletion_protection = false
 
   schema = <<EOF
     [
-    {"name": "timestamp", "type": "TIMESTAMP", "mode": "REQUIRED"},
+    {"name": "timestamp", "type": "TIMESTAMP", "mode": "NULLABLE"},
     {"name": "level", "type": "STRING", "mode": "REQUIRED"},
     {"name": "message", "type": "STRING", "mode": "REQUIRED"}
     ]
