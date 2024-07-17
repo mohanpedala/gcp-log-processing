@@ -22,3 +22,21 @@ resource "null_resource" "upload_files" {
   }
   depends_on = [google_storage_bucket.raw_logs]
 }
+
+resource "google_bigquery_dataset" "logs_dataset" {
+  dataset_id = "logs_dataset"
+  location   = "US"
+}
+
+resource "google_bigquery_table" "processed_logs" {
+  dataset_id = google_bigquery_dataset.logs_dataset.dataset_id
+  table_id   = "processed_logs"
+
+  schema = <<EOF
+    [
+    {"name": "timestamp", "type": "TIMESTAMP", "mode": "REQUIRED"},
+    {"name": "level", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "message", "type": "STRING", "mode": "REQUIRED"}
+    ]
+    EOF
+}
