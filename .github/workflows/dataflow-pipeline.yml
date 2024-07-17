@@ -50,3 +50,4 @@ jobs:
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --temp_location ${{ env.RAW_LOGS_BUCKET_URL }}/*txt \
             --region us-central1
+            --no_wait_until_finish

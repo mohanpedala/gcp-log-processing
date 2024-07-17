@@ -42,6 +42,7 @@ def run(argv=None):
          | 'WriteToBigQuery' >> WriteToBigQuery(
              table='log-processing-12345:logs_dataset.processed_logs',
              schema='timestamp:TIMESTAMP,level:STRING,message:STRING',
+             custom_gcs_temp_location=bucket_url + 'temp',
              create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
              write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
          )
