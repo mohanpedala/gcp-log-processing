@@ -1,64 +1,52 @@
 import time
-import logging
+import re
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions
-from apache_beam.io.gcp.bigquery import WriteToBigQuery
 
-project_id = "log-processing-12345"
-bucket_url = f"gs://{project_id}-raw-logs/"
+project_id = 'log-processing-12345'
+region = 'us-central1'
 
 
-class ParseLogFn(beam.DoFn):
+class ParseLogLine(beam.DoFn):
     def process(self, element):
         import re
-        # Improved regular expression to capture timestamp, level, and message
-        pattern = re.compile(r'^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<level>\S+) (?P<message>.+)$')
-        match = pattern.match(element)
+        
+        log_pattern = re.compile(r'^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<level>\S+) (?P<message>.+)$')
+        match = log_pattern.match(element)
         if match:
+            timestamp_str = match.group('timestamp')
             yield {
-                'timestamp': match.group('timestamp'),  # Extract timestamp group
-                'level': match.group('level').upper(),  # Convert level to uppercase
+                'timestamp': timestamp_str,  # Ensure this is a valid TIMESTAMP string
+                'log_level': match.group('level').upper(),
                 'message': match.group('message')
             }
 
-
 def run(argv=None):
-    logging.basicConfig(level=logging.INFO)
-    pipeline_options = PipelineOptions()
-    pipeline_options.view_as(StandardOptions).runner = 'DataflowRunner'
-
     # Generate a unique job name
     job_name = f"log-processing-pipeline-{int(time.time())}"
 
-    # Define your pipeline options
-    options = PipelineOptions(
+    pipeline_options = PipelineOptions(
+        flags=argv,
         project=project_id,
-        region='us-central1',
-        temp_location=bucket_url,
+        region=region,
         job_name=job_name,
+        temp_location='gs://log-processing-12345-raw-logs/temp'
     )
+    pipeline_options.view_as(StandardOptions).runner = 'DataflowRunner'
 
-    # Define the schema to match the log format
-    schema = """
-      [
-      {"name": "timestamp", "type": "TIMESTAMP"},
-      {"name": "level", "type": "STRING"},
-      {"name": "message", "type": "STRING"}
-      ]
-    """
+    p = beam.Pipeline(options=pipeline_options)
 
-    with beam.Pipeline(options=options) as p:
-        (p
-         | 'ReadFromGCS' >> beam.io.ReadFromText('gs://log-processing-12345-raw-logs/*.txt')
-         | 'ParseLog' >> beam.ParDo(ParseLogFn())
-         | 'WriteToBigQuery' >> WriteToBigQuery(
-             table='log-processing-12345:logs_dataset.processed_logs',
-             schema=schema,
-             custom_gcs_temp_location=bucket_url + 'temp',
-             create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
-             write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
-         )
-        )
+    logs = (p
+            | 'ReadLogFile' >> beam.io.ReadFromText('gs://log-processing-12345-new-logs-bucket/*.txt')
+            | 'ParseLogLine' >> beam.ParDo(ParseLogLine())
+            | 'WriteToBigQuery' >> beam.io.WriteToBigQuery(
+                'log-processing-12345:logs_dataset.processed_logs',
+                schema='timestamp:TIMESTAMP,log_level:STRING,message:STRING',
+                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+            ))
+
+    p.run().wait_until_finish()
 
 if __name__ == '__main__':
     run()

@@ -1,3 +1,3 @@
-echo "2024-07-15 13:00:00 INFO User updated profile" > sample_logs/log2.txt
-echo "2024-07-15 13:05:00 ERROR Database connection failed" >> sample_logs/log2.txt
-echo "2024-07-15 13:10:00 INFO System maintenance started" >> sample_logs/log2.txt
+2024-07-14 12:00:00 INFO User logged in from IP 192.168.1.2
+2024-07-14 12:05:00 ERROR Failed to load page /home due to timedddddout
+2024-07-14 12:10:00 WARN Disk space running low on server
