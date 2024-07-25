@@ -43,7 +43,7 @@ def run(argv=None):
     p = beam.Pipeline(options=pipeline_options)
 
     logs = (p
-            | 'ReadLogFile' >> beam.io.ReadFromText('gs://log-processing-12345-new-logs-bucket/log1.txt')
+            | 'ReadLogFile' >> beam.io.ReadFromText('gs://log-processing-12345-new-logs-bucket/*.txt')
             | 'ParseLogLine' >> beam.ParDo(ParseLogLine())
             | 'WriteToBigQuery' >> beam.io.WriteToBigQuery(
                 'log-processing-12345:logs_dataset.processed_logs',
