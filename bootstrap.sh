@@ -1,16 +1,24 @@
-gcloud projects create log-processing-12345
+#!/bin/bash
 
-gcloud config set project your-project-id
+# Variables
+PROJECT_ID="log-processing-12345"
+BUCKET_NAME=$PROJECT_ID-"terraform-state"
+SERVICE_ACCOUNT_NAME="log-processing-terraform"
+SERVICE_ACCOUNT_EMAIL="$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com"
 
+# Create GCP Project
+gcloud projects create $PROJECT_ID
 
-## link billing account
+# Set the created project as the default project
+gcloud config set project $PROJECT_ID
+
+# Enable required services
 gcloud services enable storage.googleapis.com
 gcloud services enable dataflow.googleapis.com
 gcloud services enable bigquery.googleapis.com
 
-
-gcloud storage buckets create gs://my-unique-bucket-name-12345 --location=US
-
+# Create a storage bucket
+gcloud storage buckets create gs://$BUCKET_NAME --location=US
 
 ## Create gcloud service accocunt to run the terraform code
 # Create a Service Account:
@@ -37,18 +45,32 @@ gcloud storage buckets create gs://my-unique-bucket-name-12345 --location=US
 # Copy code
 # export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
 
-gcloud projects add-iam-policy-binding log-processing-12345 \
-    --member=serviceAccount:log-processing-terraform@log-processing-12345.iam.gserviceaccount.com \
+# Create a Service Account
+gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \
+    --description="Service account for Terraform management" \
+    --display-name="Terraform Admin"
+
+# Assign roles to the Service Account
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member=serviceAccount:$SERVICE_ACCOUNT_EMAIL \
     --role=roles/storage.objectViewer
 
-gcloud projects add-iam-policy-binding log-processing-12345 \
-    --member=serviceAccount:log-processing-terraform@log-processing-12345.iam.gserviceaccount.com \
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member=serviceAccount:$SERVICE_ACCOUNT_EMAIL \
     --role=roles/storage.objectAdmin
 
-gcloud projects add-iam-policy-binding log-processing-12345 \
-    --member=serviceAccount:log-processing-terraform@log-processing-12345.iam.gserviceaccount.com \
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member=serviceAccount:$SERVICE_ACCOUNT_EMAIL \
     --role=roles/dataflow.admin
 
-gcloud projects add-iam-policy-binding log-processing-12345 \
-    --member=serviceAccount:log-processing-terraform@log-processing-12345.iam.gserviceaccount.com \
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member=serviceAccount:$SERVICE_ACCOUNT_EMAIL \
     --role=roles/bigquery.dataEditor
+
+# Create a JSON key for the Service Account
+gcloud iam service-accounts keys create ~/keyfile.json \
+    --iam-account $SERVICE_ACCOUNT_EMAIL
+
+echo "Service account key saved to ~/keyfile.json"
+echo "Remember to set the GOOGLE_APPLICATION_CREDENTIALS environment variable:"
+echo "export GOOGLE_APPLICATION_CREDENTIALS=\"~/keyfile.json\""
